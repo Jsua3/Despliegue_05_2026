@@ -24,13 +24,13 @@ services:
     container_name: parcial_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-parcial_audit}
-      POSTGRES_USER: ${POSTGRES_USER:-audit_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-audit2026}
+      POSTGRES_DB: ${POSTGRES_DB:-parcial_orders}
+      POSTGRES_USER: ${POSTGRES_USER:-orders_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orders2026}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_orders_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -46,8 +46,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      postgres:
-        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_HOST: mysql
@@ -55,16 +53,31 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-parcial_db}
       DB_USER: ${MYSQL_USER:-parcial_user}
       DB_PASSWORD: ${MYSQL_PASSWORD:-parcial2026}
-      AUDIT_DB_HOST: postgres
-      AUDIT_DB_PORT: 5432
-      AUDIT_DB_NAME: ${POSTGRES_DB:-parcial_audit}
-      AUDIT_DB_USER: ${POSTGRES_USER:-audit_user}
-      AUDIT_DB_PASSWORD: ${POSTGRES_PASSWORD:-audit2026}
       JWT_SECRET: ${JWT_SECRET:-ParcialJwtSecretProduccion2026MuySeguro!!}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://18.230.85.195}
       SEED_ENABLED: ${SEED_ENABLED:-true}
     ports:
       - "8080:8080"
+
+  orders-service:
+    build:
+      context: ./orders-service
+    container_name: parcial_orders_service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8081
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-parcial_orders}
+      POSTGRES_USER: ${POSTGRES_USER:-orders_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orders2026}
+      JWT_SECRET: ${JWT_SECRET:-ParcialJwtSecretProduccion2026MuySeguro!!}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://18.230.85.195}
+    ports:
+      - "8081:8081"
 
   frontend:
     build:
@@ -73,9 +86,10 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+      - orders-service
     ports:
       - "80:80"
 
 volumes:
   mysql_data:
-  postgres_data:
+  postgres_orders_data:

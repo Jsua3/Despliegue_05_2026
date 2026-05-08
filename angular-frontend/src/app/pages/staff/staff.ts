@@ -1,80 +1,82 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { ItemResponse, ItemStatus } from '../../core/models/api.models';
-import { ItemService } from '../../core/services/item.service';
+import { PedidoResponse, PedidoStatus } from '../../core/models/api.models';
+import { PedidoService } from '../../core/services/pedido.service';
+import { AuthService } from '../../core/services/auth.service';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge';
 
-type StaffFilter = ItemStatus | 'PENDIENTES' | 'TODOS';
+type PedidoFilter = PedidoStatus | 'TODOS';
 
 @Component({
   selector: 'app-staff',
-  imports: [DatePipe, FormsModule, RouterLink, StatusBadgeComponent],
+  imports: [DatePipe, StatusBadgeComponent],
   template: `
     <section class="space-y-5">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-sm font-bold uppercase tracking-wide text-emerald-700">Revision operativa</p>
-          <h1 class="mt-1 text-3xl font-black text-stone-950">Panel staff/admin</h1>
-          <p class="mt-2 text-sm text-stone-600">Aqui se pasan items a revision y se aprueban o rechazan.</p>
+          <p class="text-sm font-bold uppercase tracking-wide text-red-700">Microservicio PostgreSQL</p>
+          <h1 class="mt-1 text-3xl font-black text-stone-950">{{ auth.isAdmin() ? 'Gestion de pedidos' : 'Mis pedidos' }}</h1>
+          <p class="mt-2 text-sm text-stone-600">Los pedidos se persisten en PostgreSQL desde un microservicio independiente.</p>
         </div>
-        <select [value]="filter()" (change)="setFilter($any($event.target).value)"
-                class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700">
-          <option value="PENDIENTES">Pendientes</option>
+        <select [value]="filter()" (change)="setFilter($any($event.target).value)" class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700">
           <option value="TODOS">Todos</option>
           @for (status of statuses; track status) {
-            <option [value]="status">{{ status.replace('_', ' ') }}</option>
+            <option [value]="status">{{ status }}</option>
           }
         </select>
       </div>
 
       <div class="grid gap-4">
-        @for (item of visibleItems(); track item.id) {
+        @for (pedido of visiblePedidos(); track pedido.id) {
           <article class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <a [routerLink]="['/items', item.id]" class="text-xl font-black text-stone-950 hover:text-emerald-800">{{ item.titulo }}</a>
+                <h2 class="text-xl font-black text-stone-950">Pedido #{{ pedido.id }} · {{ pedido.productoNombre }}</h2>
                 <p class="mt-1 text-sm font-semibold text-stone-500">
-                  {{ item.catalogo.nombre }} · {{ item.createdBy.email }} · {{ item.createdAt | date:'short' }}
+                  {{ pedido.clienteNombre }} · {{ pedido.clienteEmail }} · {{ pedido.createdAt | date:'short' }}
                 </p>
               </div>
-              <app-status-badge [status]="item.status" />
+              <app-status-badge [status]="pedido.status" />
             </div>
-            <p class="mt-3 text-sm text-stone-700">{{ item.descripcion }}</p>
 
-            @if (item.status === 'ENVIADO' || item.status === 'EN_REVISION') {
-              <textarea rows="2" [ngModel]="noteFor(item.id)" (ngModelChange)="setNote(item.id, $event)"
-                        class="mt-4 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-                        placeholder="Observaciones"></textarea>
+            <dl class="mt-4 grid gap-3 md:grid-cols-4">
+              <div class="rounded-lg bg-stone-50 p-3">
+                <dt class="text-xs font-black uppercase text-stone-500">Cantidad</dt>
+                <dd class="font-black text-stone-950">{{ pedido.cantidadKg }} kg</dd>
+              </div>
+              <div class="rounded-lg bg-stone-50 p-3">
+                <dt class="text-xs font-black uppercase text-stone-500">Precio kg</dt>
+                <dd class="font-black text-stone-950">{{ money(pedido.precioKg) }}</dd>
+              </div>
+              <div class="rounded-lg bg-stone-50 p-3">
+                <dt class="text-xs font-black uppercase text-stone-500">Total</dt>
+                <dd class="font-black text-red-700">{{ money(pedido.total) }}</dd>
+              </div>
+              <div class="rounded-lg bg-stone-50 p-3">
+                <dt class="text-xs font-black uppercase text-stone-500">Entrega</dt>
+                <dd class="font-black text-stone-950">{{ pedido.direccionEntrega }}</dd>
+              </div>
+            </dl>
+
+            @if (pedido.observaciones) {
+              <p class="mt-3 text-sm text-stone-600">{{ pedido.observaciones }}</p>
             }
 
             <div class="mt-4 flex flex-wrap gap-2">
-              @if (item.status === 'ENVIADO') {
-                <button type="button" (click)="revisar(item)"
-                        class="rounded-lg border border-amber-300 px-4 py-2 text-sm font-black text-amber-800 hover:bg-amber-50">
-                  Pasar a revision
-                </button>
+              @if (auth.isAdmin() && pedido.status === 'PENDIENTE') {
+                <button type="button" (click)="confirmar(pedido)" class="rounded-lg border border-sky-300 px-4 py-2 text-sm font-black text-sky-800 hover:bg-sky-50">Confirmar</button>
               }
-              @if (item.status === 'EN_REVISION') {
-                <button type="button" (click)="aprobar(item)"
-                        class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">
-                  Aprobar
-                </button>
-                <button type="button" (click)="rechazar(item)"
-                        class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-black text-white hover:bg-rose-800">
-                  Rechazar
-                </button>
+              @if (auth.isAdmin() && pedido.status === 'CONFIRMADO') {
+                <button type="button" (click)="entregar(pedido)" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">Entregar</button>
               }
-              <a [routerLink]="['/items', item.id]"
-                 class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-black text-stone-700 hover:bg-stone-100">
-                Ver detalle
-              </a>
+              @if (pedido.status !== 'ENTREGADO' && pedido.status !== 'CANCELADO') {
+                <button type="button" (click)="cancelar(pedido)" class="rounded-lg border border-rose-300 px-4 py-2 text-sm font-black text-rose-800 hover:bg-rose-50">Cancelar</button>
+              }
             </div>
           </article>
         } @empty {
           <div class="rounded-lg border border-stone-200 bg-white p-8 text-center shadow-soft">
-            <p class="font-black text-stone-950">No hay items para revisar con este filtro.</p>
+            <p class="font-black text-stone-950">No hay pedidos para mostrar.</p>
           </div>
         }
       </div>
@@ -82,20 +84,14 @@ type StaffFilter = ItemStatus | 'PENDIENTES' | 'TODOS';
   `
 })
 export class StaffComponent implements OnInit {
-  private readonly itemService = inject(ItemService);
-  readonly items = signal<ItemResponse[]>([]);
-  readonly notes = signal<Record<number, string>>({});
-  readonly filter = signal<StaffFilter>('PENDIENTES');
-  readonly statuses: ItemStatus[] = ['BORRADOR', 'ENVIADO', 'EN_REVISION', 'APROBADO', 'RECHAZADO'];
-  readonly visibleItems = computed(() => {
+  private readonly pedidoService = inject(PedidoService);
+  readonly auth = inject(AuthService);
+  readonly pedidos = signal<PedidoResponse[]>([]);
+  readonly filter = signal<PedidoFilter>('TODOS');
+  readonly statuses: PedidoStatus[] = ['PENDIENTE', 'CONFIRMADO', 'ENTREGADO', 'CANCELADO'];
+  readonly visiblePedidos = computed(() => {
     const selected = this.filter();
-    if (selected === 'TODOS') {
-      return this.items();
-    }
-    if (selected === 'PENDIENTES') {
-      return this.items().filter((item) => item.status === 'ENVIADO' || item.status === 'EN_REVISION');
-    }
-    return this.items().filter((item) => item.status === selected);
+    return selected === 'TODOS' ? this.pedidos() : this.pedidos().filter((pedido) => pedido.status === selected);
   });
 
   ngOnInit(): void {
@@ -103,34 +99,26 @@ export class StaffComponent implements OnInit {
   }
 
   load(): void {
-    this.itemService.list().subscribe((items) => this.items.set(items));
+    this.pedidoService.list().subscribe((pedidos) => this.pedidos.set(pedidos));
   }
 
-  setFilter(value: StaffFilter): void {
+  setFilter(value: PedidoFilter): void {
     this.filter.set(value);
   }
 
-  noteFor(id: number): string {
-    return this.notes()[id] ?? '';
+  confirmar(pedido: PedidoResponse): void {
+    this.pedidoService.confirmar(pedido.id).subscribe(() => this.load());
   }
 
-  setNote(id: number, value: string): void {
-    this.notes.update((notes) => ({ ...notes, [id]: value }));
+  entregar(pedido: PedidoResponse): void {
+    this.pedidoService.entregar(pedido.id).subscribe(() => this.load());
   }
 
-  revisar(item: ItemResponse): void {
-    this.itemService.revisar(item.id, this.noteFor(item.id)).subscribe((updated) => this.replace(updated));
+  cancelar(pedido: PedidoResponse): void {
+    this.pedidoService.cancelar(pedido.id).subscribe(() => this.load());
   }
 
-  aprobar(item: ItemResponse): void {
-    this.itemService.aprobar(item.id, this.noteFor(item.id)).subscribe((updated) => this.replace(updated));
-  }
-
-  rechazar(item: ItemResponse): void {
-    this.itemService.rechazar(item.id, this.noteFor(item.id)).subscribe((updated) => this.replace(updated));
-  }
-
-  private replace(updated: ItemResponse): void {
-    this.items.update((items) => items.map((item) => item.id === updated.id ? updated : item));
+  money(value: number): string {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
   }
 }

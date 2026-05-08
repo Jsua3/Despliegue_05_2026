@@ -49,7 +49,7 @@ public class ItemController {
     }
 
     @PatchMapping("/{id}/revisar")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ItemResponse revisar(
             @PathVariable Long id,
             @RequestBody(required = false) StaffDecisionRequest request,
@@ -59,7 +59,7 @@ public class ItemController {
     }
 
     @PatchMapping("/{id}/aprobar")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ItemResponse aprobar(
             @PathVariable Long id,
             @RequestBody(required = false) StaffDecisionRequest request,
@@ -69,7 +69,7 @@ public class ItemController {
     }
 
     @PatchMapping("/{id}/rechazar")
-    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ItemResponse rechazar(
             @PathVariable Long id,
             @RequestBody(required = false) StaffDecisionRequest request,

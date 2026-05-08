@@ -1,146 +1,171 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ItemResponse } from '../../../core/models/api.models';
-import { ItemService } from '../../../core/services/item.service';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ProductoResponse } from '../../../core/models/api.models';
+import { ProductoService } from '../../../core/services/producto.service';
+import { PedidoService } from '../../../core/services/pedido.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge';
 
 @Component({
   selector: 'app-item-detail',
-  imports: [DatePipe, FormsModule, RouterLink, StatusBadgeComponent],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <section class="space-y-5">
-      <a routerLink="/items" class="text-sm font-black text-emerald-700 hover:text-emerald-900">Volver a items</a>
+      <a routerLink="/items" class="text-sm font-black text-red-700 hover:text-red-900">Volver a productos</a>
 
-      @if (item(); as data) {
-        <div class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-bold uppercase tracking-wide text-emerald-700">{{ data.catalogo.nombre }}</p>
-              <h1 class="mt-1 text-3xl font-black text-stone-950">{{ data.titulo }}</h1>
-              <p class="mt-2 text-sm text-stone-500">Creado {{ data.createdAt | date:'medium' }}</p>
-            </div>
-            <app-status-badge [status]="data.status" />
-          </div>
+      @if (producto(); as data) {
+        <div class="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+          <article class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft">
+            <p class="text-sm font-bold uppercase tracking-wide text-red-700">{{ data.categoria }}</p>
+            <h1 class="mt-1 text-3xl font-black text-stone-950">{{ data.nombre }}</h1>
+            <p class="mt-3 text-stone-700">{{ data.descripcion }}</p>
+            <dl class="mt-6 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-lg bg-stone-50 p-4">
+                <dt class="text-xs font-black uppercase tracking-wide text-stone-500">Precio kg</dt>
+                <dd class="mt-1 text-xl font-black text-red-700">{{ money(data.precioKg) }}</dd>
+              </div>
+              <div class="rounded-lg bg-stone-50 p-4">
+                <dt class="text-xs font-black uppercase tracking-wide text-stone-500">Stock</dt>
+                <dd class="mt-1 text-xl font-black text-stone-950">{{ data.stockKg }} kg</dd>
+              </div>
+              <div class="rounded-lg bg-stone-50 p-4">
+                <dt class="text-xs font-black uppercase tracking-wide text-stone-500">Estado</dt>
+                <dd class="mt-1 text-xl font-black text-stone-950">{{ data.activo ? 'Activo' : 'Inactivo' }}</dd>
+              </div>
+            </dl>
+          </article>
 
-          <dl class="mt-6 grid gap-4 md:grid-cols-3">
-            <div class="rounded-lg bg-stone-50 p-4">
-              <dt class="text-xs font-black uppercase tracking-wide text-stone-500">Solicitante</dt>
-              <dd class="mt-1 font-bold text-stone-900">{{ data.solicitanteNombre }}</dd>
-            </div>
-            <div class="rounded-lg bg-stone-50 p-4">
-              <dt class="text-xs font-black uppercase tracking-wide text-stone-500">Contacto</dt>
-              <dd class="mt-1 font-bold text-stone-900">{{ data.contacto }}</dd>
-            </div>
-            <div class="rounded-lg bg-stone-50 p-4">
-              <dt class="text-xs font-black uppercase tracking-wide text-stone-500">Cantidad / fecha</dt>
-              <dd class="mt-1 font-bold text-stone-900">{{ data.cantidad }} · {{ data.fechaObjetivo || 'Sin fecha' }}</dd>
-            </div>
-          </dl>
-
-          <div class="mt-6">
-            <h2 class="text-sm font-black uppercase tracking-wide text-stone-500">Descripcion</h2>
-            <p class="mt-2 whitespace-pre-line text-stone-700">{{ data.descripcion }}</p>
-          </div>
-
-          @if (data.observacionesStaff) {
-            <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <h2 class="text-sm font-black uppercase tracking-wide text-amber-800">Observaciones</h2>
-              <p class="mt-2 whitespace-pre-line text-amber-900">{{ data.observacionesStaff }}</p>
-            </div>
-          }
-
-          <div class="mt-6 flex flex-wrap gap-2">
-            @if (data.status === 'BORRADOR') {
-              <button type="button" (click)="enviar()"
-                      class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">
-                Enviar
+          @if (!auth.isAdmin()) {
+            <form class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft" [formGroup]="pedidoForm" (ngSubmit)="crearPedido(data)">
+              <h2 class="text-xl font-black text-stone-950">Hacer pedido</h2>
+              <p class="mt-1 text-sm text-stone-600">El pedido se guarda en el microservicio PostgreSQL.</p>
+              <div class="mt-4 grid gap-4">
+                <label class="block">
+                  <span class="text-sm font-bold text-stone-700">Cantidad kg</span>
+                  <input type="number" min="0.1" step="0.1" formControlName="cantidadKg" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
+                </label>
+                <label class="block">
+                  <span class="text-sm font-bold text-stone-700">Nombre cliente</span>
+                  <input type="text" formControlName="clienteNombre" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
+                </label>
+                <label class="block">
+                  <span class="text-sm font-bold text-stone-700">Direccion entrega</span>
+                  <input type="text" formControlName="direccionEntrega" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
+                </label>
+                <label class="block">
+                  <span class="text-sm font-bold text-stone-700">Observaciones</span>
+                  <textarea rows="3" formControlName="observaciones" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100"></textarea>
+                </label>
+              </div>
+              <button type="submit" [disabled]="pedidoForm.invalid || loading()" class="mt-4 w-full rounded-lg bg-red-700 px-4 py-2 text-sm font-black text-white hover:bg-red-800 disabled:bg-stone-300">
+                {{ loading() ? 'Enviando...' : 'Confirmar pedido' }}
               </button>
-            }
-          </div>
+            </form>
+          } @else {
+            <form class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft" [formGroup]="adminForm" (ngSubmit)="actualizar(data.id)">
+              <h2 class="text-xl font-black text-stone-950">Editar producto</h2>
+              <div class="mt-4 grid gap-4">
+                <input type="text" formControlName="nombre" class="rounded-lg border border-stone-300 px-3 py-2">
+                <select formControlName="categoria" class="rounded-lg border border-stone-300 bg-white px-3 py-2">
+                  <option value="Res">Res</option>
+                  <option value="Cerdo">Cerdo</option>
+                  <option value="Pollo">Pollo</option>
+                  <option value="Embutidos">Embutidos</option>
+                </select>
+                <input type="number" formControlName="precioKg" class="rounded-lg border border-stone-300 px-3 py-2">
+                <input type="number" formControlName="stockKg" class="rounded-lg border border-stone-300 px-3 py-2">
+                <textarea rows="3" formControlName="descripcion" class="rounded-lg border border-stone-300 px-3 py-2"></textarea>
+                <label class="flex items-center gap-2 text-sm font-bold text-stone-700">
+                  <input type="checkbox" formControlName="activo">
+                  Activo
+                </label>
+              </div>
+              <button type="submit" [disabled]="adminForm.invalid || loading()" class="mt-4 w-full rounded-lg bg-red-700 px-4 py-2 text-sm font-black text-white hover:bg-red-800 disabled:bg-stone-300">
+                Guardar cambios
+              </button>
+            </form>
+          }
         </div>
-
-        @if (auth.isStaffOrAdmin() && (data.status === 'ENVIADO' || data.status === 'EN_REVISION')) {
-          <div class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft">
-            <h2 class="text-lg font-black text-stone-950">Acciones staff</h2>
-            <textarea rows="3" [ngModel]="observaciones()" (ngModelChange)="observaciones.set($event)"
-                      class="mt-3 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-                      placeholder="Observaciones internas o respuesta visible"></textarea>
-            <div class="mt-3 flex flex-wrap gap-2">
-              @if (data.status === 'ENVIADO') {
-                <button type="button" (click)="revisar()"
-                        class="rounded-lg border border-amber-300 px-4 py-2 text-sm font-black text-amber-800 hover:bg-amber-50">
-                  Pasar a revision
-                </button>
-              }
-              @if (data.status === 'EN_REVISION') {
-                <button type="button" (click)="aprobar()"
-                        class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">
-                  Aprobar
-                </button>
-                <button type="button" (click)="rechazar()"
-                        class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-black text-white hover:bg-rose-800">
-                  Rechazar
-                </button>
-              }
-            </div>
-          </div>
-        }
       } @else {
-        <div class="rounded-lg border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-600">
-          Cargando item...
-        </div>
+        <div class="rounded-lg border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-600">Cargando producto...</div>
       }
     </section>
   `
 })
 export class ItemDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly itemService = inject(ItemService);
+  private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+  private readonly productoService = inject(ProductoService);
+  private readonly pedidoService = inject(PedidoService);
   readonly auth = inject(AuthService);
+  readonly producto = signal<ProductoResponse | null>(null);
+  readonly loading = signal(false);
 
-  readonly item = signal<ItemResponse | null>(null);
-  readonly observaciones = signal('');
+  readonly pedidoForm = this.fb.nonNullable.group({
+    cantidadKg: [1, [Validators.required, Validators.min(0.1)]],
+    clienteNombre: ['', [Validators.required]],
+    direccionEntrega: ['', [Validators.required]],
+    observaciones: ['']
+  });
+
+  readonly adminForm = this.fb.nonNullable.group({
+    nombre: ['', [Validators.required]],
+    categoria: ['Res', [Validators.required]],
+    precioKg: [0, [Validators.required, Validators.min(1)]],
+    stockKg: [0, [Validators.required, Validators.min(0)]],
+    descripcion: ['', [Validators.required]],
+    activo: [true]
+  });
 
   ngOnInit(): void {
+    this.pedidoForm.patchValue({ clienteNombre: this.auth.currentUser()?.nombre ?? '' });
     this.load();
   }
 
   load(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.itemService.get(id).subscribe((item) => {
-      this.item.set(item);
-      this.observaciones.set(item.observacionesStaff ?? '');
+    this.productoService.get(id).subscribe((producto) => {
+      this.producto.set(producto);
+      this.adminForm.patchValue(producto);
     });
   }
 
-  enviar(): void {
-    const current = this.item();
-    if (!current) {
+  crearPedido(producto: ProductoResponse): void {
+    if (this.pedidoForm.invalid) {
       return;
     }
-    this.itemService.enviar(current.id).subscribe((item) => this.item.set(item));
+    this.loading.set(true);
+    const value = this.pedidoForm.getRawValue();
+    this.pedidoService.create({
+      productoId: producto.id,
+      productoNombre: producto.nombre,
+      precioKg: producto.precioKg,
+      cantidadKg: value.cantidadKg,
+      clienteNombre: value.clienteNombre,
+      direccionEntrega: value.direccionEntrega,
+      observaciones: value.observaciones
+    }).subscribe({
+      next: () => this.router.navigate(['/staff']),
+      error: () => this.loading.set(false)
+    });
   }
 
-  revisar(): void {
-    this.runStaffAction((id, obs) => this.itemService.revisar(id, obs));
-  }
-
-  aprobar(): void {
-    this.runStaffAction((id, obs) => this.itemService.aprobar(id, obs));
-  }
-
-  rechazar(): void {
-    this.runStaffAction((id, obs) => this.itemService.rechazar(id, obs));
-  }
-
-  private runStaffAction(action: (id: number, obs: string) => ReturnType<ItemService['revisar']>): void {
-    const current = this.item();
-    if (!current) {
+  actualizar(id: number): void {
+    if (this.adminForm.invalid) {
       return;
     }
-    action(current.id, this.observaciones()).subscribe((item) => this.item.set(item));
+    this.loading.set(true);
+    this.productoService.update(id, this.adminForm.getRawValue()).subscribe({
+      next: (producto) => {
+        this.producto.set(producto);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  money(value: number): string {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
   }
 }

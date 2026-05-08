@@ -1,86 +1,96 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ItemResponse, ItemStatus } from '../../../core/models/api.models';
-import { ItemService } from '../../../core/services/item.service';
-import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge';
-
-type StatusFilter = ItemStatus | 'TODOS';
+import { ProductoResponse } from '../../../core/models/api.models';
+import { ProductoService } from '../../../core/services/producto.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-item-list',
-  imports: [DatePipe, RouterLink, StatusBadgeComponent],
+  imports: [RouterLink],
   template: `
     <section class="space-y-5">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-sm font-bold uppercase tracking-wide text-emerald-700">Gestion principal</p>
-          <h1 class="mt-1 text-3xl font-black text-stone-950">Items</h1>
+          <p class="text-sm font-bold uppercase tracking-wide text-red-700">Inventario</p>
+          <h1 class="mt-1 text-3xl font-black text-stone-950">Productos carnicos</h1>
+          <p class="mt-2 text-sm text-stone-600">CRUD de productos almacenado en MySQL.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <select [value]="filter()" (change)="setFilter($any($event.target).value)"
-                  class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700">
-            <option value="TODOS">Todos</option>
-            @for (status of statuses; track status) {
-              <option [value]="status">{{ label(status) }}</option>
-            }
-          </select>
+        @if (auth.isAdmin()) {
           <a routerLink="/items/nuevo"
-             class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">
-            Nuevo
+             class="rounded-lg bg-red-700 px-4 py-2 text-sm font-black text-white hover:bg-red-800">
+            Nuevo producto
           </a>
-        </div>
+        }
       </div>
 
-      @if (filteredItems().length) {
-        <div class="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-soft">
-          <div class="hidden grid-cols-[1fr_150px_145px_110px] gap-3 border-b border-stone-200 bg-stone-50 px-4 py-3 text-xs font-black uppercase tracking-wide text-stone-500 md:grid">
-            <span>Item</span>
-            <span>Catalogo</span>
-            <span>Estado</span>
-            <span>Accion</span>
-          </div>
-          @for (item of filteredItems(); track item.id) {
-            <article class="grid gap-3 border-b border-stone-100 px-4 py-4 last:border-b-0 md:grid-cols-[1fr_150px_145px_110px] md:items-center">
+      <div class="rounded-lg border border-stone-200 bg-white p-4 shadow-soft">
+        <input type="search" [value]="search()" (input)="search.set($any($event.target).value)"
+               placeholder="Buscar por nombre o categoria"
+               class="w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        @for (producto of filteredProductos(); track producto.id) {
+          <article class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between gap-3">
               <div>
-                <a [routerLink]="['/items', item.id]" class="font-black text-stone-950 hover:text-emerald-800">{{ item.titulo }}</a>
-                <p class="mt-1 line-clamp-2 text-sm text-stone-600">{{ item.descripcion }}</p>
-                <p class="mt-2 text-xs font-semibold text-stone-500">{{ item.createdAt | date:'short' }}</p>
+                <p class="text-xs font-black uppercase tracking-wide text-red-700">{{ producto.categoria }}</p>
+                <a [routerLink]="['/items', producto.id]" class="mt-1 block text-xl font-black text-stone-950 hover:text-red-800">
+                  {{ producto.nombre }}
+                </a>
               </div>
-              <p class="text-sm font-bold text-stone-700">{{ item.catalogo.nombre }}</p>
-              <app-status-badge [status]="item.status" />
-              <div class="flex items-center gap-2">
-                @if (item.status === 'BORRADOR') {
-                  <button type="button" (click)="enviar(item)"
-                          class="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-black text-emerald-800 hover:bg-emerald-50">
-                    Enviar
-                  </button>
-                } @else {
-                  <a [routerLink]="['/items', item.id]" class="text-sm font-black text-emerald-700 hover:text-emerald-900">Ver</a>
-                }
+              <span class="rounded-md bg-stone-100 px-2 py-1 text-xs font-black text-stone-700">
+                {{ producto.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <p class="mt-3 line-clamp-3 text-sm text-stone-600">{{ producto.descripcion }}</p>
+            <dl class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-lg bg-stone-50 p-3">
+                <dt class="text-xs font-black uppercase text-stone-500">Precio</dt>
+                <dd class="font-black text-red-700">{{ money(producto.precioKg) }}/kg</dd>
               </div>
-            </article>
-          }
-        </div>
-      } @else {
-        <div class="rounded-lg border border-stone-200 bg-white p-8 text-center shadow-soft">
-          <p class="font-black text-stone-950">No hay items para este filtro.</p>
-          <a routerLink="/items/nuevo" class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">
-            Crear el primero
-          </a>
-        </div>
-      }
+              <div class="rounded-lg bg-stone-50 p-3">
+                <dt class="text-xs font-black uppercase text-stone-500">Stock</dt>
+                <dd class="font-black text-stone-950">{{ producto.stockKg }} kg</dd>
+              </div>
+            </dl>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <a [routerLink]="['/items', producto.id]"
+                 class="rounded-lg border border-red-300 px-3 py-2 text-sm font-black text-red-800 hover:bg-red-50">
+                {{ auth.isAdmin() ? 'Editar / ver' : 'Comprar' }}
+              </a>
+              @if (auth.isAdmin() && producto.activo) {
+                <button type="button" (click)="delete(producto)"
+                        class="rounded-lg border border-stone-300 px-3 py-2 text-sm font-black text-stone-700 hover:bg-stone-100">
+                  Desactivar
+                </button>
+              }
+            </div>
+          </article>
+        } @empty {
+          <div class="rounded-lg border border-stone-200 bg-white p-8 text-center shadow-soft md:col-span-2 xl:col-span-3">
+            <p class="font-black text-stone-950">No hay productos para mostrar.</p>
+          </div>
+        }
+      </div>
     </section>
   `
 })
 export class ItemListComponent implements OnInit {
-  private readonly itemService = inject(ItemService);
-  readonly items = signal<ItemResponse[]>([]);
-  readonly filter = signal<StatusFilter>('TODOS');
-  readonly statuses: ItemStatus[] = ['BORRADOR', 'ENVIADO', 'EN_REVISION', 'APROBADO', 'RECHAZADO'];
-  readonly filteredItems = computed(() => {
-    const selected = this.filter();
-    return selected === 'TODOS' ? this.items() : this.items().filter((item) => item.status === selected);
+  private readonly productoService = inject(ProductoService);
+  readonly auth = inject(AuthService);
+  readonly productos = signal<ProductoResponse[]>([]);
+  readonly search = signal('');
+  readonly filteredProductos = computed(() => {
+    const value = this.search().toLowerCase().trim();
+    if (!value) {
+      return this.productos();
+    }
+    return this.productos().filter((producto) =>
+      producto.nombre.toLowerCase().includes(value) || producto.categoria.toLowerCase().includes(value)
+    );
   });
 
   ngOnInit(): void {
@@ -88,20 +98,14 @@ export class ItemListComponent implements OnInit {
   }
 
   load(): void {
-    this.itemService.list().subscribe((items) => this.items.set(items));
+    this.productoService.list(this.auth.isAdmin()).subscribe((productos) => this.productos.set(productos));
   }
 
-  enviar(item: ItemResponse): void {
-    this.itemService.enviar(item.id).subscribe((updated) => {
-      this.items.update((items) => items.map((current) => current.id === updated.id ? updated : current));
-    });
+  delete(producto: ProductoResponse): void {
+    this.productoService.delete(producto.id).subscribe(() => this.load());
   }
 
-  setFilter(value: StatusFilter): void {
-    this.filter.set(value);
-  }
-
-  label(status: ItemStatus): string {
-    return status.replace('_', ' ');
+  money(value: number): string {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
   }
 }

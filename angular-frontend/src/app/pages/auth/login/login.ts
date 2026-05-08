@@ -10,9 +10,9 @@ import { AuthService } from '../../../core/services/auth.service';
     <section class="grid min-h-screen place-items-center bg-stone-50 px-4 py-8">
       <div class="w-full max-w-md rounded-lg border border-stone-200 bg-white p-6 shadow-soft">
         <div class="mb-6">
-          <p class="text-sm font-bold uppercase tracking-wide text-emerald-700">Plantilla Parcial</p>
+          <p class="text-sm font-bold uppercase tracking-wide text-red-700">Carniceria Buen Corte</p>
           <h1 class="mt-2 text-2xl font-black text-stone-950">Ingreso</h1>
-          <p class="mt-2 text-sm text-stone-600">Base generica lista para adaptar la tematica del negocio.</p>
+          <p class="mt-2 text-sm text-stone-600">Gestion de productos carnicos, clientes y pedidos.</p>
         </div>
 
         @if (error()) {
@@ -67,8 +67,7 @@ export class LoginComponent {
   readonly error = signal('');
   readonly demos = [
     { label: 'Admin', email: 'admin@app.com', password: 'admin123' },
-    { label: 'Staff', email: 'staff@app.com', password: 'staff123' },
-    { label: 'User', email: 'user@app.com', password: 'user123' }
+    { label: 'Cliente', email: 'user@app.com', password: 'user123' }
   ];
 
   readonly form = this.fb.nonNullable.group({

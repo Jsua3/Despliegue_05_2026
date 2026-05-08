@@ -26,8 +26,3 @@ app:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   seed:
     enabled: ${SEED_ENABLED:true}
-  audit:
-    datasource:
-      url: jdbc:postgresql://${AUDIT_DB_HOST:localhost}:${AUDIT_DB_PORT:5432}/${AUDIT_DB_NAME:parcial_audit}
-      username: ${AUDIT_DB_USER:audit_user}
-      password: ${AUDIT_DB_PASSWORD:audit2026}

@@ -25,7 +25,6 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final CatalogoRepository catalogoRepository;
     private final DtoMapper mapper;
-    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<ItemResponse> list(AppUser user) {
@@ -60,9 +59,7 @@ public class ItemService {
                 .createdBy(user)
                 .build();
 
-        Item saved = itemRepository.save(item);
-        auditService.record("ITEM_CREADO", "Item", saved.getId(), user.getEmail(), "Item creado en estado BORRADOR.");
-        return mapper.toItemResponse(saved);
+        return mapper.toItemResponse(itemRepository.save(item));
     }
 
     @Transactional
@@ -73,9 +70,7 @@ public class ItemService {
 
         item.setStatus(ItemStatus.ENVIADO);
         item.setEnviadoAt(LocalDateTime.now());
-        Item saved = itemRepository.save(item);
-        auditService.record("ITEM_ENVIADO", "Item", saved.getId(), user.getEmail(), "Cambio BORRADOR -> ENVIADO.");
-        return mapper.toItemResponse(saved);
+        return mapper.toItemResponse(itemRepository.save(item));
     }
 
     @Transactional
@@ -86,9 +81,7 @@ public class ItemService {
         item.setStatus(ItemStatus.EN_REVISION);
         item.setObservacionesStaff(cleanObservaciones(request));
         item.setRevisadoAt(LocalDateTime.now());
-        Item saved = itemRepository.save(item);
-        auditService.record("ITEM_EN_REVISION", "Item", saved.getId(), user.getEmail(), "Cambio ENVIADO -> EN_REVISION.");
-        return mapper.toItemResponse(saved);
+        return mapper.toItemResponse(itemRepository.save(item));
     }
 
     @Transactional
@@ -99,9 +92,7 @@ public class ItemService {
         item.setStatus(ItemStatus.APROBADO);
         item.setObservacionesStaff(cleanObservaciones(request));
         item.setRevisadoAt(LocalDateTime.now());
-        Item saved = itemRepository.save(item);
-        auditService.record("ITEM_APROBADO", "Item", saved.getId(), user.getEmail(), "Cambio EN_REVISION -> APROBADO.");
-        return mapper.toItemResponse(saved);
+        return mapper.toItemResponse(itemRepository.save(item));
     }
 
     @Transactional
@@ -112,9 +103,7 @@ public class ItemService {
         item.setStatus(ItemStatus.RECHAZADO);
         item.setObservacionesStaff(cleanObservaciones(request));
         item.setRevisadoAt(LocalDateTime.now());
-        Item saved = itemRepository.save(item);
-        auditService.record("ITEM_RECHAZADO", "Item", saved.getId(), user.getEmail(), "Cambio EN_REVISION -> RECHAZADO.");
-        return mapper.toItemResponse(saved);
+        return mapper.toItemResponse(itemRepository.save(item));
     }
 
     private Item findVisibleItem(Long id, AppUser user) {
@@ -143,7 +132,7 @@ public class ItemService {
     }
 
     private boolean isStaff(AppUser user) {
-        return user.getRole() == Role.STAFF || user.getRole() == Role.ADMIN;
+        return user.getRole() == Role.ADMIN;
     }
 
     private String cleanObservaciones(StaffDecisionRequest request) {

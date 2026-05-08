@@ -26,6 +26,7 @@ export const routes: Routes = [
       },
       {
         path: 'items/nuevo',
+        canActivate: [staffGuard],
         loadComponent: () => import('./pages/items/item-create/item-create').then((m) => m.ItemCreateComponent)
       },
       {
@@ -34,7 +35,6 @@ export const routes: Routes = [
       },
       {
         path: 'staff',
-        canActivate: [staffGuard],
         loadComponent: () => import('./pages/staff/staff').then((m) => m.StaffComponent)
       }
     ]

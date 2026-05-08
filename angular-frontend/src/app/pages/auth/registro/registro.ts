@@ -9,9 +9,9 @@ import { AuthService } from '../../../core/services/auth.service';
   template: `
     <section class="grid min-h-screen place-items-center bg-stone-50 px-4 py-8">
       <div class="w-full max-w-md rounded-lg border border-stone-200 bg-white p-6 shadow-soft">
-        <p class="text-sm font-bold uppercase tracking-wide text-emerald-700">Plantilla Parcial</p>
+        <p class="text-sm font-bold uppercase tracking-wide text-red-700">Carniceria Buen Corte</p>
         <h1 class="mt-2 text-2xl font-black text-stone-950">Registro</h1>
-        <p class="mt-2 text-sm text-stone-600">Crea un usuario con rol USER para probar el flujo base.</p>
+        <p class="mt-2 text-sm text-stone-600">Crea un cliente para comprar productos por kilogramo.</p>
 
         @if (error()) {
           <div class="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">

@@ -24,7 +24,7 @@ textarea {
 .app-shell {
   min-height: 100vh;
   background:
-    linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent 30%),
+    linear-gradient(135deg, rgba(185, 28, 28, 0.08), transparent 30%),
     linear-gradient(315deg, rgba(245, 158, 11, 0.1), transparent 24%),
     #f8faf7;
 }

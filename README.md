@@ -1,119 +1,99 @@
-# Plantilla Fullstack Parcial 2026
+# Carniceria Buen Corte
 
-Base reutilizable para parcial: Spring Boot 3.2, Angular 21, MySQL 8, Docker Compose y Nginx. La app queda preparada para adaptar rapidamente una tematica tipo restaurante, clinica, tienda, biblioteca, hotel, universidad, taller o inventario.
+Aplicacion full-stack dockerizada para la tematica **Carniceria**. Cumple microservicios, JWT, roles, MySQL + PostgreSQL, Angular y despliegue con Docker Compose en nube publica.
 
-## Stack
+## Arquitectura
 
-- Backend: Java 17, Spring Boot 3.2.12, Maven, Spring Security, JWT, JPA, MySQL, PostgreSQL, Lombok, Validation.
-- Frontend: Angular 21 standalone, Signals, Router, Reactive Forms, HttpClient, interceptor JWT, Tailwind CSS.
-- Produccion: Docker Compose, MySQL 8 para datos principales, PostgreSQL para auditoria, backend en `8080`, frontend Nginx en `80`, proxy `/api/ -> http://backend:8080/api/`.
+- `backend/`: microservicio Spring Boot 3.2 para autenticacion JWT y CRUD de productos. Usa MySQL.
+- `orders-service/`: microservicio Spring Boot 3.2 para pedidos. Usa PostgreSQL.
+- `angular-frontend/`: cliente Angular 21 standalone con guards, interceptor JWT y vistas por rol.
+- `mysql`: MySQL 8 para usuarios, roles y productos.
+- `postgres`: PostgreSQL 16 para pedidos.
+- `frontend`: Nginx puerto 80, sirve Angular y enruta:
+  - `/api/pedidos` -> `orders-service:8081`
+  - `/api/` -> `backend:8080`
 
-## Credenciales demo
+## Roles y credenciales
 
 - `admin@app.com` / `admin123` / `ADMIN`
-- `staff@app.com` / `staff123` / `STAFF`
 - `user@app.com` / `user123` / `USER`
 
-## Endpoints base
+## Funcionalidad
+
+- Registro y login con JWT.
+- Productos de carniceria: listar, crear, editar y desactivar.
+- Pedidos: crear como cliente, listar por usuario, administrar como ADMIN.
+- Flujo de pedido: `PENDIENTE -> CONFIRMADO -> ENTREGADO`, con cancelacion antes de entrega.
+- Vistas frontend diferentes para `ADMIN` y `USER`.
+
+## Endpoints principales
+
+Auth/productos, MySQL:
 
 - `POST /api/auth/login`
 - `POST /api/auth/register`
 - `GET /api/auth/me`
-- `GET /api/catalogos`
-- `GET /api/catalogos/{id}`
-- `GET /api/items`
-- `POST /api/items`
-- `GET /api/items/{id}`
-- `PATCH /api/items/{id}/enviar`
-- `PATCH /api/items/{id}/revisar`
-- `PATCH /api/items/{id}/aprobar`
-- `PATCH /api/items/{id}/rechazar`
-- `GET /api/db/health`
-- `GET /api/auditoria` (`STAFF`/`ADMIN`)
+- `GET /api/productos`
+- `GET /api/productos/{id}`
+- `POST /api/productos` (`ADMIN`)
+- `PUT /api/productos/{id}` (`ADMIN`)
+- `DELETE /api/productos/{id}` (`ADMIN`, desactiva)
 
-Flujo base: `BORRADOR -> ENVIADO -> EN_REVISION -> APROBADO | RECHAZADO`.
+Pedidos, PostgreSQL:
 
-## Dos bases de datos
-
-- MySQL (`parcial_mysql`) guarda usuarios, catalogos e items con Spring Data JPA.
-- PostgreSQL (`parcial_postgres`) guarda eventos de auditoria del flujo con `JdbcTemplate`.
-- Cada creacion/envio/revision/aprobacion/rechazo de item inserta un registro en `audit_events`.
-- Verificacion rapida: `curl -i http://localhost/api/db/health`.
+- `GET /api/pedidos/health`
+- `GET /api/pedidos`
+- `POST /api/pedidos`
+- `GET /api/pedidos/{id}`
+- `PATCH /api/pedidos/{id}/confirmar` (`ADMIN`)
+- `PATCH /api/pedidos/{id}/entregar` (`ADMIN`)
+- `PATCH /api/pedidos/{id}/cancelar`
 
 ## Ejecutar local
-
-```bash
-cp .env.example .env
-docker compose up -d mysql
-cd backend
-mvn clean package -DskipTests
-mvn spring-boot:run
-```
-
-En otra terminal:
-
-```bash
-cd angular-frontend
-npm install
-npm start
-```
-
-Frontend local: `http://localhost:4200`
-
-Backend local: `http://localhost:8080/api/catalogos`
-
-## Build requerido antes de desplegar
-
-```bash
-cd backend
-mvn clean package -DskipTests
-
-cd ../angular-frontend
-npm run build -- --configuration production
-```
-
-`environment.production.ts` usa `apiUrl: '/api'`, listo para Nginx.
-
-## Docker Compose
 
 ```bash
 cp .env.example .env
 docker compose down --remove-orphans
 docker compose up -d --build
 docker compose ps
-curl -i http://localhost
-curl -i http://localhost:8080/api/catalogos
-curl -i http://localhost/api/catalogos
-curl -i http://localhost/api/db/health
 ```
 
-## Adaptar tematica en menos de 20 minutos
+URLs locales:
 
-1. Nombre visual:
-   Cambia `Plantilla Parcial` en `angular-frontend/src/app/shared/navbar/navbar.ts`, `angular-frontend/src/app/pages/auth/login/login.ts`, `angular-frontend/src/app/pages/auth/registro/registro.ts` y `angular-frontend/src/index.html`.
+- Frontend: `http://localhost`
+- Auth/productos: `http://localhost/api/productos`
+- Pedidos: `http://localhost/api/pedidos/health`
 
-2. Catalogos iniciales:
-   Edita `backend/src/main/java/com/parcial/template/config/SeedDataConfig.java`. Renombra `OPCION_A` a categorias reales como mesa, cita, reserva, producto, servicio, libro o habitacion.
+## Builds manuales
 
-3. Entidad principal:
-   Si no hay tiempo, conserva `Item` como nombre interno y cambia textos frontend. Si el profesor exige nombres exactos, renombra `Item`, `ItemResponse`, `ItemCreateRequest`, `ItemService`, `ItemController` y rutas `/api/items`.
+```bash
+cd backend
+mvn clean package -DskipTests
 
-4. Flujo:
-   Para cambiar estados, edita `backend/src/main/java/com/parcial/template/entity/ItemStatus.java`, reglas en `ItemService.java` y etiquetas en `angular-frontend/src/app/shared/status-badge/status-badge.ts`.
+cd ../orders-service
+mvn clean package -DskipTests
 
-5. Campos del formulario:
-   Ajusta `ItemCreateRequest.java`, entidad `Item.java` y `angular-frontend/src/app/pages/items/item-create/item-create.ts`. Mantener `titulo`, `descripcion`, `catalogo` y `status` ahorra tiempo.
+cd ../angular-frontend
+npm install
+npm run build -- --configuration production
+```
 
-6. Textos frontend:
-   Busca `Item`, `Catalogo`, `Solicitud`, `flujo generico` y reemplaza por el vocabulario del negocio.
+## Pruebas rapidas
 
-7. Variables de despliegue:
-   Cambia `.env` en servidor o `.env.example`: `MYSQL_PASSWORD`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`.
+```bash
+curl -i http://localhost/api/productos
+curl -i http://localhost/api/pedidos/health
+```
 
-8. Verificacion express:
-   Crea item con `user@app.com`, envialo, entra con `staff@app.com`, pasalo a revision y apruebalo.
+Login:
 
-## Deploy EC2 Ubuntu 24.04 por SSH
+```bash
+curl -X POST http://localhost/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@app.com","password":"admin123"}'
+```
+
+## Deploy EC2 Ubuntu 24.04
 
 Key local Windows:
 
@@ -121,7 +101,7 @@ Key local Windows:
 ssh -i "D:\Sua_Files\Downloads\almacen-key.pem" ubuntu@18.230.85.195
 ```
 
-Si SSH falla por permisos en Windows:
+Si SSH falla por permisos:
 
 ```powershell
 icacls "D:\Sua_Files\Downloads\almacen-key.pem" /inheritance:r
@@ -129,7 +109,7 @@ icacls "D:\Sua_Files\Downloads\almacen-key.pem" /remove:g "*S-1-5-11" "*S-1-5-32
 icacls "D:\Sua_Files\Downloads\almacen-key.pem" /grant:r "$env:USERNAME:R"
 ```
 
-En la instancia:
+En EC2:
 
 ```bash
 git clone https://github.com/Jsua3/Despliegue_05_2026.git /home/ubuntu/Despliegue_05_2026
@@ -138,41 +118,10 @@ chmod +x deploy.sh
 ./deploy.sh
 ```
 
-El script crea swap de 2GB, instala Docker/Git/Curl si hace falta, crea `.env`, ejecuta `docker compose down --remove-orphans`, `docker compose up -d --build`, muestra logs y prueba:
+El script crea swap de 2GB, instala Docker/Git/Curl si hace falta, crea `.env`, reconstruye contenedores, muestra logs y prueba frontend/productos/pedidos.
 
-- `curl -i http://localhost`
-- `curl -i http://localhost:8080/api/catalogos`
-- `curl -i http://localhost/api/catalogos`
-- `curl -i http://localhost/api/db/health`
+## Entrega
 
-## Alternativa SSM Run Command
-
-Usar si SSH no entra y la instancia tiene SSM Agent activo con permisos IAM.
-
-```bash
-aws ssm send-command \
-  --document-name "AWS-RunShellScript" \
-  --targets "Key=instanceids,Values=i-xxxxxxxxxxxxxxxxx" \
-  --parameters 'commands=["git clone https://github.com/Jsua3/Despliegue_05_2026.git /home/ubuntu/Despliegue_05_2026 || true","cd /home/ubuntu/Despliegue_05_2026 && git pull --ff-only || true","cd /home/ubuntu/Despliegue_05_2026 && chmod +x deploy.sh && ./deploy.sh"]' \
-  --comment "Deploy plantilla parcial"
-```
-
-## GitHub
-
-Repositorio destino:
-
-```bash
-git init
-git branch -M main
-git remote add origin https://github.com/Jsua3/Despliegue_05_2026.git
-git add .
-git commit -m "Crear plantilla fullstack para parcial"
-git push -u origin main
-```
-
-## Notas importantes
-
-- En templates Angular 21, si escribes correos estaticos usa `user&#64;app.com`.
-- No devolver entidades JPA directamente si agregas relaciones bidireccionales: usa DTOs como en esta plantilla.
-- En Ubuntu usa `docker compose`, no `docker-compose`.
-- En instancia pequena, conserva el swap de `deploy.sh`.
+- GitHub: `https://github.com/Jsua3/Despliegue_05_2026.git`
+- Backend publico esperado: `http://IP_PUBLICA/api/productos` y `http://IP_PUBLICA/api/pedidos/health`
+- Frontend publico esperado: `http://IP_PUBLICA`

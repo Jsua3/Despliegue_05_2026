@@ -27,7 +27,11 @@ export class AuthService {
 
   isStaffOrAdmin(): boolean {
     const role = this.currentUser()?.role;
-    return role === 'STAFF' || role === 'ADMIN';
+    return role === 'ADMIN';
+  }
+
+  isAdmin(): boolean {
+    return this.currentUser()?.role === 'ADMIN';
   }
 
   login(payload: { email: string; password: string }) {

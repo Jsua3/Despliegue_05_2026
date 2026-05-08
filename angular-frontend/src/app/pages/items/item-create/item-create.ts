@@ -1,10 +1,7 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CatalogoResponse } from '../../../core/models/api.models';
-import { CatalogoService } from '../../../core/services/catalogo.service';
-import { ItemService } from '../../../core/services/item.service';
-import { AuthService } from '../../../core/services/auth.service';
+import { ProductoService } from '../../../core/services/producto.service';
 
 @Component({
   selector: 'app-item-create',
@@ -12,130 +9,84 @@ import { AuthService } from '../../../core/services/auth.service';
   template: `
     <section class="mx-auto max-w-3xl space-y-5">
       <div>
-        <p class="text-sm font-bold uppercase tracking-wide text-emerald-700">Nuevo registro</p>
-        <h1 class="mt-1 text-3xl font-black text-stone-950">Crear item</h1>
-        <p class="mt-2 text-sm text-stone-600">Campos genericos para adaptar a la tematica en pocos minutos.</p>
+        <p class="text-sm font-bold uppercase tracking-wide text-red-700">Administracion</p>
+        <h1 class="mt-1 text-3xl font-black text-stone-950">Nuevo producto</h1>
+        <p class="mt-2 text-sm text-stone-600">Crea cortes, embutidos o productos vendidos por kilogramo.</p>
       </div>
 
       @if (error()) {
-        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
-          {{ error() }}
-        </div>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{{ error() }}</div>
       }
 
       <form class="rounded-lg border border-stone-200 bg-white p-5 shadow-soft" [formGroup]="form" (ngSubmit)="submit()">
         <div class="grid gap-4 md:grid-cols-2">
-          <label class="block md:col-span-2">
-            <span class="text-sm font-bold text-stone-700">Catalogo</span>
-            <select formControlName="catalogoId"
-                    class="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
-              <option [ngValue]="null">Selecciona una opcion</option>
-              @for (catalogo of catalogos(); track catalogo.id) {
-                <option [ngValue]="catalogo.id">{{ catalogo.nombre }}</option>
-              }
+          <label class="block">
+            <span class="text-sm font-bold text-stone-700">Nombre</span>
+            <input type="text" formControlName="nombre" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
+          </label>
+          <label class="block">
+            <span class="text-sm font-bold text-stone-700">Categoria</span>
+            <select formControlName="categoria" class="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
+              <option value="Res">Res</option>
+              <option value="Cerdo">Cerdo</option>
+              <option value="Pollo">Pollo</option>
+              <option value="Embutidos">Embutidos</option>
             </select>
           </label>
-
-          <label class="block md:col-span-2">
-            <span class="text-sm font-bold text-stone-700">Titulo</span>
-            <input type="text" formControlName="titulo"
-                   class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
-          </label>
-
           <label class="block">
-            <span class="text-sm font-bold text-stone-700">Solicitante</span>
-            <input type="text" formControlName="solicitanteNombre"
-                   class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
+            <span class="text-sm font-bold text-stone-700">Precio por kg</span>
+            <input type="number" min="1" formControlName="precioKg" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
           </label>
-
           <label class="block">
-            <span class="text-sm font-bold text-stone-700">Contacto</span>
-            <input type="text" formControlName="contacto"
-                   class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
+            <span class="text-sm font-bold text-stone-700">Stock kg</span>
+            <input type="number" min="0" step="0.1" formControlName="stockKg" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100">
           </label>
-
-          <label class="block">
-            <span class="text-sm font-bold text-stone-700">Cantidad</span>
-            <input type="number" min="1" formControlName="cantidad"
-                   class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
-          </label>
-
-          <label class="block">
-            <span class="text-sm font-bold text-stone-700">Fecha objetivo</span>
-            <input type="date" formControlName="fechaObjetivo"
-                   class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100">
-          </label>
-
           <label class="block md:col-span-2">
             <span class="text-sm font-bold text-stone-700">Descripcion</span>
-            <textarea rows="5" formControlName="descripcion"
-                      class="mt-1 w-full resize-y rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"></textarea>
+            <textarea rows="4" formControlName="descripcion" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100"></textarea>
+          </label>
+          <label class="flex items-center gap-2 md:col-span-2">
+            <input type="checkbox" formControlName="activo" class="size-4 rounded border-stone-300 text-red-700">
+            <span class="text-sm font-bold text-stone-700">Activo para venta</span>
           </label>
         </div>
 
         <div class="mt-5 flex justify-end gap-2">
-          <button type="button" (click)="router.navigate(['/items'])"
-                  class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-black text-stone-700 hover:bg-stone-100">
-            Cancelar
-          </button>
-          <button type="submit" [disabled]="form.invalid || loading()"
-                  class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-300">
-            {{ loading() ? 'Guardando...' : 'Guardar borrador' }}
+          <button type="button" (click)="router.navigate(['/items'])" class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-black text-stone-700 hover:bg-stone-100">Cancelar</button>
+          <button type="submit" [disabled]="form.invalid || loading()" class="rounded-lg bg-red-700 px-4 py-2 text-sm font-black text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-stone-300">
+            {{ loading() ? 'Guardando...' : 'Guardar producto' }}
           </button>
         </div>
       </form>
     </section>
   `
 })
-export class ItemCreateComponent implements OnInit {
+export class ItemCreateComponent {
   private readonly fb = inject(FormBuilder);
-  private readonly catalogoService = inject(CatalogoService);
-  private readonly itemService = inject(ItemService);
-  private readonly auth = inject(AuthService);
+  private readonly productoService = inject(ProductoService);
   readonly router = inject(Router);
-
-  readonly catalogos = signal<CatalogoResponse[]>([]);
   readonly loading = signal(false);
   readonly error = signal('');
 
-  readonly form = this.fb.group({
-    catalogoId: this.fb.control<number | null>(null, [Validators.required]),
-    titulo: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(120)]),
-    descripcion: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(1200)]),
-    solicitanteNombre: this.fb.nonNullable.control(this.auth.currentUser()?.nombre ?? '', [Validators.required]),
-    contacto: this.fb.nonNullable.control(this.auth.currentUser()?.email ?? '', [Validators.required]),
-    cantidad: this.fb.nonNullable.control(1, [Validators.required, Validators.min(1)]),
-    fechaObjetivo: this.fb.control<string | null>(null)
+  readonly form = this.fb.nonNullable.group({
+    nombre: ['', [Validators.required, Validators.maxLength(120)]],
+    categoria: ['Res', [Validators.required]],
+    precioKg: [10000, [Validators.required, Validators.min(1)]],
+    stockKg: [10, [Validators.required, Validators.min(0)]],
+    descripcion: ['', [Validators.required, Validators.maxLength(700)]],
+    activo: [true]
   });
-
-  ngOnInit(): void {
-    this.catalogoService.list().subscribe((catalogos) => this.catalogos.set(catalogos));
-  }
 
   submit(): void {
     if (this.form.invalid) {
       return;
     }
-
-    const value = this.form.getRawValue();
-    if (!value.catalogoId) {
-      return;
-    }
-
     this.loading.set(true);
     this.error.set('');
-    this.itemService.create({
-      catalogoId: value.catalogoId,
-      titulo: value.titulo,
-      descripcion: value.descripcion,
-      solicitanteNombre: value.solicitanteNombre,
-      contacto: value.contacto,
-      cantidad: value.cantidad,
-      fechaObjetivo: value.fechaObjetivo
-    }).subscribe({
-      next: (item) => this.router.navigate(['/items', item.id]),
+    this.productoService.create(this.form.getRawValue()).subscribe({
+      next: (producto) => this.router.navigate(['/items', producto.id]),
       error: () => {
-        this.error.set('No se pudo crear el item.');
+        this.error.set('No se pudo crear el producto.');
         this.loading.set(false);
       }
     });

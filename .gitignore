@@ -3,6 +3,7 @@
 
 # Java / Maven
 backend/target/
+orders-service/target/
 *.class
 
 # Angular / Node

@@ -99,9 +99,9 @@ MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root2026}
 MYSQL_DATABASE=${MYSQL_DATABASE:-parcial_db}
 MYSQL_USER=${MYSQL_USER:-parcial_user}
 MYSQL_PASSWORD=${MYSQL_PASSWORD:-parcial2026}
-POSTGRES_DB=${POSTGRES_DB:-parcial_audit}
-POSTGRES_USER=${POSTGRES_USER:-audit_user}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-audit2026}
+POSTGRES_DB=${POSTGRES_DB:-parcial_orders}
+POSTGRES_USER=${POSTGRES_USER:-orders_user}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-orders2026}
 JWT_SECRET=${JWT_SECRET:-ParcialJwtSecretProduccion2026MuySeguro!!}
 CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost,http://${public_ip}}
 SEED_ENABLED=${SEED_ENABLED:-true}
@@ -122,6 +122,9 @@ show_status() {
 
   log "Logs backend"
   sudo docker compose logs --tail=120 backend || true
+
+  log "Logs orders-service"
+  sudo docker compose logs --tail=120 orders-service || true
 
   log "Logs frontend"
   sudo docker compose logs --tail=80 frontend || true
@@ -151,8 +154,11 @@ smoke_tests() {
   log "curl -i http://localhost/api/catalogos"
   curl -i --max-time 15 http://localhost/api/catalogos || true
 
-  log "curl -i http://localhost/api/db/health"
-  curl -i --max-time 15 http://localhost/api/db/health || true
+  log "curl -i http://localhost/api/productos"
+  curl -i --max-time 15 http://localhost/api/productos || true
+
+  log "curl -i http://localhost/api/pedidos/health"
+  curl -i --max-time 15 http://localhost/api/pedidos/health || true
 }
 
 main() {

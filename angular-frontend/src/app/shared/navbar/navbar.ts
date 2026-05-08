@@ -9,10 +9,10 @@ import { AuthService } from '../../core/services/auth.service';
     <header class="border-b border-stone-200 bg-white/90 backdrop-blur">
       <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <a routerLink="/" class="flex items-center gap-3">
-          <span class="grid size-9 place-items-center rounded-lg bg-emerald-700 text-sm font-black text-white">PP</span>
+          <span class="grid size-9 place-items-center rounded-lg bg-red-700 text-sm font-black text-white">CB</span>
           <span>
-            <span class="block text-sm font-black uppercase tracking-wide text-stone-900">Plantilla Parcial</span>
-            <span class="block text-xs text-stone-500">CRUD + roles + flujo</span>
+            <span class="block text-sm font-black uppercase tracking-wide text-stone-900">Carniceria Buen Corte</span>
+            <span class="block text-xs text-stone-500">Productos frescos y pedidos</span>
           </span>
         </a>
 
@@ -20,13 +20,13 @@ import { AuthService } from '../../core/services/auth.service';
           <a routerLink="/" routerLinkActive="bg-stone-100 text-stone-950" [routerLinkActiveOptions]="{ exact: true }"
              class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Dashboard</a>
           <a routerLink="/items" routerLinkActive="bg-stone-100 text-stone-950"
-             class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Items</a>
-          <a routerLink="/items/nuevo" routerLinkActive="bg-stone-100 text-stone-950"
-             class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Nuevo</a>
-          @if (auth.isStaffOrAdmin()) {
-            <a routerLink="/staff" routerLinkActive="bg-stone-100 text-stone-950"
-               class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Staff</a>
+             class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Productos</a>
+          @if (auth.isAdmin()) {
+            <a routerLink="/items/nuevo" routerLinkActive="bg-stone-100 text-stone-950"
+               class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Nuevo producto</a>
           }
+            <a routerLink="/staff" routerLinkActive="bg-stone-100 text-stone-950"
+               class="rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-950">Pedidos</a>
         </div>
 
         <div class="flex items-center gap-3">

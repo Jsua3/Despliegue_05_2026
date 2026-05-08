@@ -1,20 +1,30 @@
 import { Component, computed, input } from '@angular/core';
-import { ItemStatus } from '../../core/models/api.models';
+import { ItemStatus, PedidoStatus } from '../../core/models/api.models';
 
-const statusClasses: Record<ItemStatus, string> = {
+type StatusValue = ItemStatus | PedidoStatus;
+
+const statusClasses: Record<StatusValue, string> = {
   BORRADOR: 'bg-stone-100 text-stone-700 ring-stone-200',
   ENVIADO: 'bg-sky-100 text-sky-800 ring-sky-200',
   EN_REVISION: 'bg-amber-100 text-amber-800 ring-amber-200',
   APROBADO: 'bg-emerald-100 text-emerald-800 ring-emerald-200',
-  RECHAZADO: 'bg-rose-100 text-rose-800 ring-rose-200'
+  RECHAZADO: 'bg-rose-100 text-rose-800 ring-rose-200',
+  PENDIENTE: 'bg-amber-100 text-amber-800 ring-amber-200',
+  CONFIRMADO: 'bg-sky-100 text-sky-800 ring-sky-200',
+  ENTREGADO: 'bg-emerald-100 text-emerald-800 ring-emerald-200',
+  CANCELADO: 'bg-rose-100 text-rose-800 ring-rose-200'
 };
 
-const statusLabels: Record<ItemStatus, string> = {
+const statusLabels: Record<StatusValue, string> = {
   BORRADOR: 'Borrador',
   ENVIADO: 'Enviado',
   EN_REVISION: 'En revision',
   APROBADO: 'Aprobado',
-  RECHAZADO: 'Rechazado'
+  RECHAZADO: 'Rechazado',
+  PENDIENTE: 'Pendiente',
+  CONFIRMADO: 'Confirmado',
+  ENTREGADO: 'Entregado',
+  CANCELADO: 'Cancelado'
 };
 
 @Component({
@@ -27,7 +37,7 @@ const statusLabels: Record<ItemStatus, string> = {
   `
 })
 export class StatusBadgeComponent {
-  readonly status = input.required<ItemStatus>();
+  readonly status = input.required<StatusValue>();
   readonly label = computed(() => statusLabels[this.status()]);
   readonly classes = computed(() => statusClasses[this.status()]);
 }

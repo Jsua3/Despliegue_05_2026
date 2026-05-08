@@ -20,7 +20,7 @@ public class DashboardService {
     private final CatalogoRepository catalogoRepository;
 
     public DashboardSummaryResponse resumen(AppUser user) {
-        boolean staff = user.getRole() == Role.STAFF || user.getRole() == Role.ADMIN;
+        boolean staff = user.getRole() == Role.ADMIN;
         Map<ItemStatus, Long> counts = new EnumMap<>(ItemStatus.class);
 
         Arrays.stream(ItemStatus.values()).forEach(status -> counts.put(
