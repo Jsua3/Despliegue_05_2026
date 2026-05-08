@@ -7,3 +7,8 @@ spring:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost,http://18.230.85.195}
+  audit:
+    datasource:
+      url: jdbc:postgresql://${AUDIT_DB_HOST:postgres}:${AUDIT_DB_PORT:5432}/${AUDIT_DB_NAME:parcial_audit}
+      username: ${AUDIT_DB_USER:audit_user}
+      password: ${AUDIT_DB_PASSWORD:audit2026}

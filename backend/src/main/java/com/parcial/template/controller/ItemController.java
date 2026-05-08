@@ -50,19 +50,31 @@ public class ItemController {
 
     @PatchMapping("/{id}/revisar")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
-    public ItemResponse revisar(@PathVariable Long id, @RequestBody(required = false) StaffDecisionRequest request) {
-        return itemService.revisar(id, request);
+    public ItemResponse revisar(
+            @PathVariable Long id,
+            @RequestBody(required = false) StaffDecisionRequest request,
+            @AuthenticationPrincipal AppUser user
+    ) {
+        return itemService.revisar(id, request, user);
     }
 
     @PatchMapping("/{id}/aprobar")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
-    public ItemResponse aprobar(@PathVariable Long id, @RequestBody(required = false) StaffDecisionRequest request) {
-        return itemService.aprobar(id, request);
+    public ItemResponse aprobar(
+            @PathVariable Long id,
+            @RequestBody(required = false) StaffDecisionRequest request,
+            @AuthenticationPrincipal AppUser user
+    ) {
+        return itemService.aprobar(id, request, user);
     }
 
     @PatchMapping("/{id}/rechazar")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
-    public ItemResponse rechazar(@PathVariable Long id, @RequestBody(required = false) StaffDecisionRequest request) {
-        return itemService.rechazar(id, request);
+    public ItemResponse rechazar(
+            @PathVariable Long id,
+            @RequestBody(required = false) StaffDecisionRequest request,
+            @AuthenticationPrincipal AppUser user
+    ) {
+        return itemService.rechazar(id, request, user);
     }
 }

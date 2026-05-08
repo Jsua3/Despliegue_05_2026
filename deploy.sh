@@ -99,6 +99,9 @@ MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root2026}
 MYSQL_DATABASE=${MYSQL_DATABASE:-parcial_db}
 MYSQL_USER=${MYSQL_USER:-parcial_user}
 MYSQL_PASSWORD=${MYSQL_PASSWORD:-parcial2026}
+POSTGRES_DB=${POSTGRES_DB:-parcial_audit}
+POSTGRES_USER=${POSTGRES_USER:-audit_user}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-audit2026}
 JWT_SECRET=${JWT_SECRET:-ParcialJwtSecretProduccion2026MuySeguro!!}
 CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost,http://${public_ip}}
 SEED_ENABLED=${SEED_ENABLED:-true}
@@ -125,6 +128,9 @@ show_status() {
 
   log "Logs mysql"
   sudo docker compose logs --tail=80 mysql || true
+
+  log "Logs postgres"
+  sudo docker compose logs --tail=80 postgres || true
 }
 
 smoke_tests() {
@@ -144,6 +150,9 @@ smoke_tests() {
 
   log "curl -i http://localhost/api/catalogos"
   curl -i --max-time 15 http://localhost/api/catalogos || true
+
+  log "curl -i http://localhost/api/db/health"
+  curl -i --max-time 15 http://localhost/api/db/health || true
 }
 
 main() {

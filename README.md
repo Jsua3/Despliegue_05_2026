@@ -4,9 +4,9 @@ Base reutilizable para parcial: Spring Boot 3.2, Angular 21, MySQL 8, Docker Com
 
 ## Stack
 
-- Backend: Java 17, Spring Boot 3.2.12, Maven, Spring Security, JWT, JPA, MySQL, Lombok, Validation.
+- Backend: Java 17, Spring Boot 3.2.12, Maven, Spring Security, JWT, JPA, MySQL, PostgreSQL, Lombok, Validation.
 - Frontend: Angular 21 standalone, Signals, Router, Reactive Forms, HttpClient, interceptor JWT, Tailwind CSS.
-- Produccion: Docker Compose, MySQL 8, backend en `8080`, frontend Nginx en `80`, proxy `/api/ -> http://backend:8080/api/`.
+- Produccion: Docker Compose, MySQL 8 para datos principales, PostgreSQL para auditoria, backend en `8080`, frontend Nginx en `80`, proxy `/api/ -> http://backend:8080/api/`.
 
 ## Credenciales demo
 
@@ -28,8 +28,17 @@ Base reutilizable para parcial: Spring Boot 3.2, Angular 21, MySQL 8, Docker Com
 - `PATCH /api/items/{id}/revisar`
 - `PATCH /api/items/{id}/aprobar`
 - `PATCH /api/items/{id}/rechazar`
+- `GET /api/db/health`
+- `GET /api/auditoria` (`STAFF`/`ADMIN`)
 
 Flujo base: `BORRADOR -> ENVIADO -> EN_REVISION -> APROBADO | RECHAZADO`.
+
+## Dos bases de datos
+
+- MySQL (`parcial_mysql`) guarda usuarios, catalogos e items con Spring Data JPA.
+- PostgreSQL (`parcial_postgres`) guarda eventos de auditoria del flujo con `JdbcTemplate`.
+- Cada creacion/envio/revision/aprobacion/rechazo de item inserta un registro en `audit_events`.
+- Verificacion rapida: `curl -i http://localhost/api/db/health`.
 
 ## Ejecutar local
 
@@ -75,6 +84,7 @@ docker compose ps
 curl -i http://localhost
 curl -i http://localhost:8080/api/catalogos
 curl -i http://localhost/api/catalogos
+curl -i http://localhost/api/db/health
 ```
 
 ## Adaptar tematica en menos de 20 minutos
@@ -98,7 +108,7 @@ curl -i http://localhost/api/catalogos
    Busca `Item`, `Catalogo`, `Solicitud`, `flujo generico` y reemplaza por el vocabulario del negocio.
 
 7. Variables de despliegue:
-   Cambia `.env` en servidor o `.env.example`: `MYSQL_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`.
+   Cambia `.env` en servidor o `.env.example`: `MYSQL_PASSWORD`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`.
 
 8. Verificacion express:
    Crea item con `user@app.com`, envialo, entra con `staff@app.com`, pasalo a revision y apruebalo.
@@ -133,6 +143,7 @@ El script crea swap de 2GB, instala Docker/Git/Curl si hace falta, crea `.env`, 
 - `curl -i http://localhost`
 - `curl -i http://localhost:8080/api/catalogos`
 - `curl -i http://localhost/api/catalogos`
+- `curl -i http://localhost/api/db/health`
 
 ## Alternativa SSM Run Command
 
