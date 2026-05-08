@@ -126,6 +126,9 @@ show_status() {
   log "Logs orders-service"
   sudo docker compose logs --tail=120 orders-service || true
 
+  log "Logs api-gateway"
+  sudo docker compose logs --tail=120 api-gateway || true
+
   log "Logs frontend"
   sudo docker compose logs --tail=80 frontend || true
 
@@ -137,9 +140,9 @@ show_status() {
 }
 
 smoke_tests() {
-  log "Esperando backend para pruebas rapidas"
+  log "Esperando API Gateway para pruebas rapidas"
   for _ in $(seq 1 30); do
-    if curl -fsS http://localhost:8080/api/catalogos >/dev/null 2>&1; then
+    if curl -fsS http://localhost:8082/api/catalogos >/dev/null 2>&1; then
       break
     fi
     sleep 4
@@ -150,6 +153,9 @@ smoke_tests() {
 
   log "curl -i http://localhost:8080/api/catalogos"
   curl -i --max-time 15 http://localhost:8080/api/catalogos || true
+
+  log "curl -i http://localhost:8082/api/catalogos"
+  curl -i --max-time 15 http://localhost:8082/api/catalogos || true
 
   log "curl -i http://localhost/api/catalogos"
   curl -i --max-time 15 http://localhost/api/catalogos || true

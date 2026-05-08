@@ -79,14 +79,29 @@ services:
     ports:
       - "8081:8081"
 
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: parcial_api_gateway
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - orders-service
+    environment:
+      SERVER_PORT: 8082
+      BACKEND_SERVICE_URL: http://backend:8080
+      ORDERS_SERVICE_URL: http://orders-service:8081
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://18.230.85.195}
+    ports:
+      - "8082:8082"
+
   frontend:
     build:
       context: ./angular-frontend
     container_name: parcial_frontend
     restart: unless-stopped
     depends_on:
-      - backend
-      - orders-service
+      - api-gateway
     ports:
       - "80:80"
 

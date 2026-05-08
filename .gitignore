@@ -4,6 +4,7 @@
 # Java / Maven
 backend/target/
 orders-service/target/
+api-gateway/target/
 *.class
 
 # Angular / Node

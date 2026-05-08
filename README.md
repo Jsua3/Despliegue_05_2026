@@ -6,12 +6,16 @@ Aplicacion full-stack dockerizada para la tematica **Carniceria**. Cumple micros
 
 - `backend/`: microservicio Spring Boot 3.2 para autenticacion JWT y CRUD de productos. Usa MySQL.
 - `orders-service/`: microservicio Spring Boot 3.2 para pedidos. Usa PostgreSQL.
+- `api-gateway/`: microservicio Spring Boot 3.2 con Spring Cloud Gateway. Enruta las peticiones a los microservicios internos.
 - `angular-frontend/`: cliente Angular 21 standalone con guards, interceptor JWT y vistas por rol.
 - `mysql`: MySQL 8 para usuarios, roles y productos.
 - `postgres`: PostgreSQL 16 para pedidos.
-- `frontend`: Nginx puerto 80, sirve Angular y enruta:
-  - `/api/pedidos` -> `orders-service:8081`
-  - `/api/` -> `backend:8080`
+- `frontend`: Nginx puerto 80, sirve Angular y envia `/api/` al API Gateway.
+
+Ruteo interno del API Gateway:
+
+- `/api/pedidos/**` -> `orders-service:8081` -> PostgreSQL.
+- `/api/**` -> `backend:8080` -> MySQL.
 
 ## Roles y credenciales
 
@@ -61,6 +65,7 @@ docker compose ps
 URLs locales:
 
 - Frontend: `http://localhost`
+- API Gateway directo: `http://localhost:8082/api/productos`
 - Auth/productos: `http://localhost/api/productos`
 - Pedidos: `http://localhost/api/pedidos/health`
 
@@ -73,6 +78,9 @@ mvn clean package -DskipTests
 cd ../orders-service
 mvn clean package -DskipTests
 
+cd ../api-gateway
+mvn clean package -DskipTests
+
 cd ../angular-frontend
 npm install
 npm run build -- --configuration production
@@ -83,6 +91,7 @@ npm run build -- --configuration production
 ```bash
 curl -i http://localhost/api/productos
 curl -i http://localhost/api/pedidos/health
+curl -i http://localhost:8082/api/productos
 ```
 
 Login:
@@ -123,5 +132,5 @@ El script crea swap de 2GB, instala Docker/Git/Curl si hace falta, crea `.env`, 
 ## Entrega
 
 - GitHub: `https://github.com/Jsua3/Despliegue_05_2026.git`
-- Backend publico esperado: `http://IP_PUBLICA/api/productos` y `http://IP_PUBLICA/api/pedidos/health`
+- Backend publico esperado por API Gateway: `http://IP_PUBLICA/api/productos` y `http://IP_PUBLICA/api/pedidos/health`
 - Frontend publico esperado: `http://IP_PUBLICA`
