@@ -1,0 +1,19 @@
+.env
+*.log
+
+# Java / Maven
+backend/target/
+*.class
+
+# Angular / Node
+angular-frontend/node_modules/
+angular-frontend/dist/
+angular-frontend/.angular/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
